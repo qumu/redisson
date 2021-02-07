@@ -16,6 +16,7 @@
 package org.redisson.codec;
 
 import java.io.IOException;
+import java.io.InvalidClassException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
@@ -56,6 +57,11 @@ public class SerializationCodec extends BaseCodec {
                         inputStream = new ObjectInputStream(in);
                     }
                     return inputStream.readObject();
+                } catch (InvalidClassException | ClassNotFoundException e) {
+                    // most likely due to class signature change due to code refactoring, ignore and return null object
+                    // propagating these exceptions up the stack will break the webapp when users with old sessions will access it
+                    // so instead return null here for incompatible classes and let the webapp regenerate session objects
+                    return null;
                 } finally {
                     Thread.currentThread().setContextClassLoader(currentThreadClassLoader);
                 }
